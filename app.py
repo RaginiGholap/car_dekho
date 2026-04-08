@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import numpy as np
+from sklearn.preprocessing import OrdinalEncoder
 
 # ===============================
 # Load trained artifacts
@@ -33,7 +34,7 @@ engine_value = st.number_input("Engine CC")
 max_power_value = st.number_input("Max Power")
 
 # ===============================
-# Create input DataFrame including numeric features
+# Create input DataFrame
 # ===============================
 input_df = pd.DataFrame([{
     'owner': owner,
@@ -49,20 +50,22 @@ input_df = pd.DataFrame([{
 }])
 
 # ===============================
-# Apply owner encoding
+# Encode categorical features safely
 # ===============================
-input_df['owner'] = owner_encoder.transform(input_df['owner'])
+# 1. Owner encoding (handles unknown categories)
+input_df['owner'] = owner_encoder.transform(input_df[['owner']])
 
-# One-hot encode categorical features
+# 2. One-hot encode other categorical features
 input_df = pd.get_dummies(input_df)
 
 # ===============================
-# Add missing columns (set 0) and keep correct order
+# Ensure all model features are present
 # ===============================
 for col in feature_columns:
     if col not in input_df.columns:
         input_df[col] = 0
 
+# Keep the same order as training
 input_df = input_df[feature_columns]
 
 # ===============================
