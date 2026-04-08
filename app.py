@@ -3,13 +3,15 @@ import streamlit as st
 import pandas as pd
 import joblib
 import numpy as np
-from sklearn.preprocessing import OrdinalEncoder
 
 # ===============================
 # Load trained artifacts
 # ===============================
 model = joblib.load("model.pkl")
 owner_encoder = joblib.load("owner_encoder.pkl")
+fuel_encoder = joblib.load("fuel_encoder.pkl")
+seller_encoder = joblib.load("seller_encoder.pkl")
+transmission_encoder = joblib.load("transmission_encoder.pkl")
 feature_columns = joblib.load("feature_columns.pkl")
 
 st.title("Car Price Prediction 💰")
@@ -65,18 +67,31 @@ input_df = pd.DataFrame([{
 }])
 
 # ===============================
-# Encode categorical features safely
+# Encode categorical features using saved encoders
 # ===============================
 input_df['owner'] = owner_encoder.transform(input_df[['owner']])
+input_df['fuel'] = fuel_encoder.transform(input_df[['fuel']])
+input_df['seller_type'] = seller_encoder.transform(input_df[['seller_type']])
+input_df['transmission'] = transmission_encoder.transform(input_df[['transmission']])
 
-# One-hot encode remaining categorical features
+# ===============================
+# One-hot encode all categorical features
+# ===============================
 input_df = pd.get_dummies(input_df)
 
-# Add missing columns (set 0) and keep correct order
+# ===============================
+# Ensure all model features exist
+# ===============================
 for col in feature_columns:
     if col not in input_df.columns:
         input_df[col] = 0
+
+# Keep the column order same as training
 input_df = input_df[feature_columns]
+
+# Debugging: show input dataframe before prediction
+st.write("Input features going to model:")
+st.write(input_df)
 
 # ===============================
 # Prediction
@@ -84,13 +99,13 @@ input_df = input_df[feature_columns]
 if st.button("Predict Price", key="predict_button"):
     try:
         prediction = model.predict(input_df)
-        # Convert log(price) back if model was trained on log
+        # If model trained on log(price), convert back
         prediction = np.exp(prediction)
     except:
         prediction = model.predict(input_df)
 
-    # Ensure prediction is always positive
-    min_price = 1000  # minimum realistic price in ₹
+    # Ensure positive and reasonable price
+    min_price = 10000  # ₹10,000 minimum
     prediction = np.maximum(prediction, min_price)
 
     st.success(f"💰 Estimated Price: ₹ {prediction[0]:,.2f}")
