@@ -37,7 +37,7 @@ engine = st.number_input("Engine CC", min_value=0.0)
 max_power = st.number_input("Max Power (bhp)", min_value=0.0)
 
 # ===============================
-# Create input DataFrame (FIXED)
+# Create input DataFrame
 # ===============================
 input_df = pd.DataFrame([{
     'owner': owner,
@@ -46,17 +46,19 @@ input_df = pd.DataFrame([{
     'transmission': transmission,
     'km_driven': km_driven,
     'seats': seats,
-    'car_age': car_age,
     'mileage': mileage,
     'engine': engine,
     'max_power': max_power
 }])
 
 # ===============================
-# Encoding (FIXED)
+# Encode 'owner' (OrdinalEncoder)
 # ===============================
-input_df['owner'] = owner_encoder.transform(input_df['owner'])
+input_df[['owner']] = owner_encoder.transform(input_df[['owner']])
 
+# ===============================
+# One-hot encoding (same as training)
+# ===============================
 input_df = pd.get_dummies(input_df)
 
 # ===============================
@@ -67,18 +69,18 @@ for col in feature_columns:
         input_df[col] = 0
 
 # ===============================
-# Keep correct column order
+# Ensure correct column order
 # ===============================
 input_df = input_df[feature_columns]
 
 # ===============================
-# Prediction (FIXED)
+# Prediction
 # ===============================
 if st.button("Predict Price"):
 
     # Basic validation
     if engine < 500 or mileage <= 0:
-        st.error("⚠️ Please enter realistic values for Engine and Mileage")
+        st.error("⚠️ Please enter realistic values")
     else:
         prediction = model.predict(input_df)[0]
 
